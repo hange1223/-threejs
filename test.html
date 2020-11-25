@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head includeDefault="true">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" charset="utf-8">
+  <title>learn</title>
+  <style>
+    body { margin: 0; }
+		canvas { width: 100%; height: 100% }
+  </style>
+  <script src="./js/three_92.js"></script>
+  <!-- <script src="./ThreeJs/js/three.js"></script> -->
+  <script src="./ThreeJs/js/stats.min.js"></script>
+  <script src="./ThreeJs/js/DragControls.js"></script>
+  <script src="./ThreeJs/js/OrbitControls.js"></script>
+  <script src="./ThreeJs/js/dat.gui.min.js"></script>
+  <script src="./ThreeJs/js/EffectComposer.js"></script>
+  <script src="./ThreeJs/js/RenderPass.js"></script>
+  <script src="./ThreeJs/js/OutlinePass.js"></script>
+  <script src="./ThreeJs/js/FXAAShader.js"></script>
+  <script src="./ThreeJs/js/CopyShader.js"></script>
+  <script src="./ThreeJs/js/ShaderPass.js"></script>
+  <script src="./ThreeJs/js/ThreeBSP.js"></script>
+  <script src="./ThreeJs/js/jquery-1.11.0.min.js"></script>
+  <script src="./ThreeJs/js/Tween.js"></script>
+  <script src="./ThreeJs/js/MTLLoader.js"></script>
+  <script src="./ThreeJs/js/OBJLoader.js"></script>
+  <script src="./ThreeJs/js/GLTFLoader.js"></script>
+  <script src="./js/FBXLoader.js"></script>
+  <script src="./ThreeJs/libs/inflate.min.js"></script>
+  <script src="./js/createShelf.js"></script>
+  <script src="./js/events.js"></script>
+  <script src="./js/move.js"></script>
+  <script src="./js/line.js"></script>
+</head>
+
+<body>
+  <!-- <div id="container"></div> -->
+  <style>
+
+  </style>
+  <script>
+
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    scene.fog = new THREE.Fog(scene.background, 3000, 5000);
+    var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 1000 );
+    camera.position.set( 0, 500, -500 );
+    camera.lookAt( 0, 10, 0 );
+    // camera.position.set(0, 800, 1500)
+    // camera.lookAt(new THREE.Vector3(0, 0, 0))
+
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+  
+    var geometry = new THREE.BoxGeometry( 20, 40, 20 );
+    var material = [
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }), 
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
+      new THREE.MeshLambertMaterial({ color: 0x00ff00, map: new THREE.TextureLoader().load('./ThreeJs/images/box.png') }),
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }), 
+    ];
+
+    var cube = new THREE.Mesh( geometry, material );
+    // cube.position.set(30,-20,-100);
+    // scene.add( cube );
+    
+    // 聚光光源
+    var spotLight = new THREE.SpotLight(0xff6600f);
+    // 设置聚光光源位置
+    spotLight.position.set(200, 200, 200);
+    // 聚光灯光源指向网格模型mesh2
+    spotLight.target = cube;
+    // 设置聚光光源发散角度
+    spotLight.angle = Math.PI / 6;
+    scene.add(spotLight);// 光对象添加到scene场景中
+
+    // 环境光
+    var ambient = new THREE.AmbientLight(0x888888);
+    scene.add(ambient);
+
+    renderer.render( scene, camera );
+
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);// 创建控件对象
+    controls.autoRotate = false;
+    controls.enableDamping = true;
+    controls.enableZoom = true;
+    // controls.autoRotateSpeed = 20
+    function animate() {
+      requestAnimationFrame( animate );
+      // cube.rotation.x += 0.01;
+      // cube.rotation.y += 0.01;
+      controls.update();
+      renderer.render( scene, camera );
+    }
+    animate();
+  </script>
+</body>

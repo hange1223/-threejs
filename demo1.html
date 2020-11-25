@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head includeDefault="true">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <title>无机器人</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #label {
+      position: absolute;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.6);
+      line-height: 1;
+      border-radius: 5px;
+    }
+  </style>
+  <script src="./js/three.js"></script>
+  <!-- <script src="./ThreeJs/js/three.js"></script> -->
+  <script src="./ThreeJs/js/stats.min.js"></script>
+  <script src="./ThreeJs/js/DragControls.js"></script>
+  <script src="./ThreeJs/js/OrbitControls.js"></script>
+  <script src="./ThreeJs/js/dat.gui.min.js"></script>
+  <script src="./ThreeJs/js/EffectComposer.js"></script>
+  <script src="./ThreeJs/js/RenderPass.js"></script>
+  <script src="./ThreeJs/js/OutlinePass.js"></script>
+  <script src="./ThreeJs/js/FXAAShader.js"></script>
+  <script src="./ThreeJs/js/CopyShader.js"></script>
+  <script src="./ThreeJs/js/ShaderPass.js"></script>
+  <script src="./ThreeJs/js/ThreeBSP.js"></script>
+  <script src="./ThreeJs/js/jquery-1.11.0.min.js"></script>
+  <script src="./ThreeJs/js/Tween.js"></script>
+  <script src="./ThreeJs/libs/inflate.min.js"></script>
+  <script src="./ThreeJs/js/FBXLoader.js"></script>
+  <script src="./js/createShelf.js"></script>
+  <script src="./js/events.js"></script>
+  <script src="./js/move.js"></script>
+</head>
+
+<body>
+  <div id="label"></div>
+  <div id="btn">巡检</div>
+  <div id="container"></div>
+  <style>
+    #label{padding:6px 12px;background:rgba(255, 255, 255, 0.6);color:#000;font-size: 14px;position: absolute;top:-200px;left:-200px;}
+    #btn{padding:0 12px;background:#9cb2d1;color:#000;line-height:40px;font-size: 14px;position: absolute;top:20px;right:20px;cursor: pointer;}
+  </style>
+  <script>
+  var stats = {}
+  let scene = {}
+  let camera = {}
+  let renderer = {}
+  let controls = {}
+  let model = {}
+  // 纹理
+  let baseMat = {
+    floor: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/floor.jpg', function (texture) {
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+      texture.repeat.set(5, 10)
+    }) }),
+    wall: [
+      new THREE.MeshPhongMaterial({ color: 0xafc0ca }), // 前
+      new THREE.MeshPhongMaterial({ color: 0x9cb2d1 }), // 后
+      new THREE.MeshPhongMaterial({ color: 0xd6e4ec }), // 上
+      new THREE.MeshPhongMaterial({ color: 0xd6e4ec }), // 下
+      new THREE.MeshPhongMaterial({ color: 0xafc0ca }), // 左
+      new THREE.MeshPhongMaterial({ color: 0xafc0ca })// 右
+    ],
+    doorL: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/door_left.png'), opacity: 1.0, transparent: true }),
+    doorR: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/door_right.png'), opacity: 1.0, transparent: true }),
+    window: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/window.png'), opacity: 1.0, transparent: true })
+  }
+
+  init()
+  createModel()
+  animate()
+
+  function init () {
+    initScene()
+    initCamera()
+    initLight()
+    initStats()
+    initRenderer()
+    initControls()
+    initComposer()
+  }
+  function createModel () {
+    createrBaseItem()
+    addBaseItem()
+    addShelf()
+    moveItem()
+  }
+  function animate () {
+    requestAnimationFrame(animate)
+    // controls.update()
+    render()
+    composer.render()
+    TWEEN.update()
+  }
+
+  // 初始化场景
+  function initScene () {
+    scene = new THREE.Scene()
+    scene.background = new THREE.Color(0xffffff)
+    scene.fog = new THREE.Fog(scene.background, 3000, 5000)
+    // var axisHelper = new THREE.AxisHelper(2500)
+    // scene.add(axisHelper)
+  }
+  // 初始化相机
+  function initCamera () {
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+    camera.position.set(0, 800, 1500)
+    camera.lookAt(new THREE.Vector3(0, 0, 0))
+  }
+  // 灯光
+  function initLight () {
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3) // 模拟远处类似太阳的光源
+    directionalLight.color.setHSL(0.1, 1, 0.95)
+    directionalLight.position.set(0, 200, 0).normalize()
+    scene.add(directionalLight)
+
+    var ambient = new THREE.AmbientLight(0xffffff, 1) // AmbientLight,影响整个场景的光源
+    ambient.position.set(0, 0, 0)
+    scene.add(ambient)
+  }
+  // 初始化性能插件
+  function initStats () {
+    stats = new Stats()
+
+    stats.domElement.style.position = 'absolute'
+    stats.domElement.style.left = '0px'
+    stats.domElement.style.top = '0px'
+
+    document.body.appendChild(stats.domElement)
+  }
+  // 初始化渲染器
+  function initRenderer () {
+    renderer = new THREE.WebGLRenderer({
+      antialias: true
+    })
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setClearColor(0x4682B4, 1.0)
+    document.body.appendChild(renderer.domElement)
+  }
+  // 执行渲染操作
+  function render () {
+    renderer.render(scene, camera)
+    stats.update()
+}
+  // 初始化轨迹球控件
+  function initControls () {
+    controls = new THREE.OrbitControls(camera, renderer.domElement)// 创建控件对象
+    controls.autoRotate = true
+    controls.enableDamping = true
+    // controls.enableZoom = false
+    controls.autoRotateSpeed = 20
+    // 视角最小距离
+    controls.zoomSpeed = 5
+    controls.addEventListener('change', render)// 监听鼠标、键盘事件
+  }
+
+  // 创建模型
+  function createBoxGeometry (opt) {
+    let geometry = new THREE.BoxGeometry(...opt.size)
+    if (opt.translateZ) {
+      geometry.translate(0, 0, opt.translateZ)
+    }
+    let obj = new THREE.Mesh(geometry, opt.material)
+    obj.position.set(...opt.pos)
+    if (opt.angleX) {
+      obj.rotation.x = opt.angle
+    } else {
+      obj.rotation.y = opt.angle
+    }
+    obj.name = opt.name
+    return obj
+  }
+  // 创建基础物件
+  function createrBaseItem () {
+    model.floor = createBoxGeometry({ size: [2000, 2000, 1], material: baseMat.floor, pos: [0, 0, 0], angle: -Math.PI / 2, name: '地面', angleX: true })
+    model.walls = [
+      createBoxGeometry({ size: [10, 300, 2000], material: baseMat.wall, pos: [1000, 150, 0], angle: Math.PI, name: '墙1' }),
+      createBoxGeometry({ size: [10, 300, 2000], material: baseMat.wall, pos: [0, 150, 1000], angle: (Math.PI / 2), name: '有窗墙' }),
+      createBoxGeometry({ size: [10, 300, 2010], material: baseMat.wall, pos: [0, 150, -1000], angle: (-Math.PI / 2), name: '墙3' }),
+      createWall()
+    ]
+    model.doorWindow = [
+      createBoxGeometry({ size: [1, 180, 90], material: baseMat.doorL, pos: [-1000, 90, -90], angle: 0, name: '门左', translateZ: 45 }),
+      createBoxGeometry({ size: [1, 180, 90], material: baseMat.doorR, pos: [-1000, 90, 90], angle: 0, name: '门右', translateZ: -45 }),
+      createBoxGeometry({ size: [1, 100, 100], material: baseMat.window, pos: [-1000, 120, -500], angle: 0, name: '窗1' }),
+      createBoxGeometry({ size: [1, 100, 100], material: baseMat.window, pos: [-1000, 120, 500], angle: 0, name: '窗2' })
+    ]
+  }
+  // 创建有门的墙
+  function createWall () {
+    let wall = createBoxGeometry({ size: [10, 300, 2010], material: baseMat.wall, pos: [-1000, 150, 0], angle: 0, name: '墙2' })
+    let holeArr = [
+      createBoxGeometry({ size: [10, 180, 90], material: baseMat.wall, pos: [-1000, 90, -45], angle: 0, name: '门1' }),
+      createBoxGeometry({ size: [10, 180, 90], material: baseMat.wall, pos: [-1000, 90, 45], angle: 0, name: '门2' }),
+      createBoxGeometry({ size: [10, 100, 100], material: baseMat.wall, pos: [-1000, 120, -500], angle: 0, name: '窗1' }),
+      createBoxGeometry({ size: [10, 100, 100], material: baseMat.wall, pos: [-1000, 120, 500], angle: 0, name: '窗2' })
+    ]
+  
+    let BSP = new ThreeBSP(wall)
+    holeArr.forEach(h => {
+      let hole = new ThreeBSP(h)
+      BSP = BSP.subtract(hole)
+    })
+    let newWall = BSP.toMesh(baseMat.wall)
+    newWall.material.flatshading = THREE.FlatShading
+    newWall.geometry.computeFaceNormals() // 重新计算几何体侧面法向量
+    newWall.geometry.computeVertexNormals()
+    newWall.material.needsUpdate = true // 更新纹理
+    newWall.geometry.buffersNeedUpdate = true
+    newWall.geometry.uvsNeedUpdate = true
+    return newWall
+  }
+  // 向场景中添加物件
+  function addBaseItem () {
+    for (let a in model) {
+      let item = model[a]
+      if (Array.isArray(item) || Object.prototype.toString.call(item) === '[object Array]') {
+        item.forEach(e => {
+          scene.add(e)
+        })
+      } else {
+        scene.add(item)
+      }
+    }
+  }
+</script>
+</body>
