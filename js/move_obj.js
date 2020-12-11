@@ -7,9 +7,9 @@ function moveItem () {
     objPath: 'model/robot/',
     objFileName: 'FDS.obj',
     completeCallback: function (object) {
-      object.scale.x = 3// 缩放级别
-      object.scale.y = 3// 缩放级别
-      object.scale.z = 3// 缩放级别
+      object.scale.x = 1// 缩放级别
+      object.scale.y = 1// 缩放级别
+      object.scale.z = 1// 缩放级别
       object.rotation.y = Math.PI// 缩放级别
       object.position.set(-700, 120, 0)
       scene.add(object)

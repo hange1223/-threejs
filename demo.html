@@ -3,7 +3,7 @@
 
 <head includeDefault="true">
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>试玩</title>
+  <title>机房巡检</title>
   <style>
     body {
       margin: 0;
@@ -39,6 +39,8 @@
   <script src="./ThreeJs/libs/inflate.min.js"></script>
   <!-- <script src="./js/createShelf.js"></script> -->
   <script src="./js/createCabinet.js"></script>
+  <script src="./js/createAirCondition.js"></script>
+  <script src="./js/addHeatMap.js"></script>
   <script src="./js/events.js"></script>
   <script src="./js/move.js"></script>
   <script src="./js/line.js"></script>
@@ -63,11 +65,13 @@
   let renderer = {}
   let controls = {}
   let model = {}
+  let addHeat = false;
+  let heatGroup;
   // 纹理
   let baseMat = {
     floor: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/floor.jpg', function (texture) {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping
-      texture.repeat.set(5, 10)
+      texture.repeat.set(20, 25);
     }) }),
     heat:new THREE.MeshLambertMaterial({
         color:0xff0000,
@@ -86,40 +90,50 @@
     doorR: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/door_right.png'), opacity: 1.0, transparent: true }),
     window: new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('./ThreeJs/images/window.png'), opacity: 1.0, transparent: true })
   }
-  var clock = new THREE.Clock()
+  var clock = new THREE.Clock();
+  var heatArr = [
+    { temperature: '29.3', pos: [700,100,-680], src: './model/red.png' },
+    { temperature: '30.3', pos: [260,100,0], src: './model/darkRed.png' },
+    { temperature: '28.1', pos: [-260,100,-480], src: './model/lightRed.png' },
+    { temperature: '27.2', pos: [-660,100,-780], src: './model/lightRed2.png'}
+  ];
 
-  init()
-  createModel()
-  animate()
+  init();
+  createModel();
+  animate();
 
   function init () {
-    initScene()
-    initCamera()
-    initLight()
-    initStats()
-    initRenderer()
-    initControls()
-    initComposer()
+    initScene();
+    initCamera();
+    initLight();
+    initStats();
+    initRenderer();
+    initControls();
+    initComposer();
     $('#btn1').click(function () {
-      model.heat = createBoxGeometry({ size: [2000, 2000, 300], material: baseMat.heat, pos: [0, 150, 0], angle: -Math.PI / 2, name: '高温', angleX: true })
-      scene.add(model.heat)
+      if(!addHeat){
+        addHeatMap(heatArr);
+        addHeat = true;
+      }
     })
     $('#btn2').click(function () {
-      scene.remove(model.heat);
+      scene.remove(heatGroup);
+      addHeat = false;
     })
   }
   function createModel () {
-    createrBaseItem()
-    addBaseItem()
-    addShelf()
-    moveItem()
+    createrBaseItem();
+    addBaseItem();
+    addShelf();
+    moveItem();
+    addAirCondition();
   }
   function animate () {
-    requestAnimationFrame(animate)
+    requestAnimationFrame(animate);
     // controls.update()
-    render()
-    composer.render()
-    TWEEN.update()
+    render();
+    composer.render();
+    TWEEN.update();
     
     var delta = clock.getDelta();
     if ( mixer ) mixer.update( delta );
@@ -127,121 +141,125 @@
 
   // 初始化场景
   function initScene () {
-    scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xffffff)
-    scene.fog = new THREE.Fog(scene.background, 3000, 5000)
-    // var axisHelper = new THREE.AxisHelper(2500)
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    scene.fog = new THREE.Fog(scene.background, 3000, 5000);
+    var axisHelper = new THREE.AxisHelper(2500);
     // scene.add(axisHelper)
   }
   // 初始化相机
   function initCamera () {
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000)
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
     // camera.position.set(0, 800, 1500);
     camera.position.set(-800, 1000, -1500);
-    camera.lookAt(new THREE.Vector3(0, 0, 0))
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
   }
   // 灯光
   function initLight () {
-    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3) // 模拟远处类似太阳的光源
-    directionalLight.color.setHSL(0.1, 1, 0.95)
-    directionalLight.position.set(0, 200, -200).normalize()
-    scene.add(directionalLight)
+    var directionalLight = new THREE.DirectionalLight(0xffffff, 0.3); // 模拟远处类似太阳的光源
+    directionalLight.color.setHSL(0.1, 1, 0.95);
+    directionalLight.position.set(0, 200, -200).normalize();
+    scene.add(directionalLight);
 
-    var ambient = new THREE.AmbientLight(0xffffff, 1) // AmbientLight,影响整个场景的光源
-    ambient.position.set(0, 0, 0)
-    scene.add(ambient)
+    var ambient = new THREE.AmbientLight(0xffffff, 1);// AmbientLight,影响整个场景的光源
+    ambient.position.set(0, 0, 0);
+    scene.add(ambient);
   }
   // 初始化性能插件
   function initStats () {
-    stats = new Stats()
+    stats = new Stats();
 
-    stats.domElement.style.position = 'absolute'
-    stats.domElement.style.left = '0px'
-    stats.domElement.style.top = '0px'
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
 
-    document.body.appendChild(stats.domElement)
+    document.body.appendChild(stats.domElement);
   }
   // 初始化渲染器
   function initRenderer () {
     renderer = new THREE.WebGLRenderer({
       antialias: true
-    })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setClearColor(0x4682B4, 1.0)
-    document.body.appendChild(renderer.domElement)
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x4682B4, 1.0);
+    document.body.appendChild(renderer.domElement);
   }
   // 执行渲染操作
   function render () {
-    renderer.render(scene, camera)
-    stats.update()
+    renderer.render(scene, camera);
+    stats.update();
+    // 定义gammaOutput和gammaFactor
+    // renderer.gammaOutput = true;
+    // renderer.gammaFactor = 2.2; 
 }
-  // 初始化轨迹球控件
+  // 控件
   function initControls () {
-    controls = new THREE.OrbitControls(camera, renderer.domElement)// 创建控件对象
-    controls.autoRotate = true
-    controls.enableDamping = true
-    // controls.enableZoom = false
-    controls.autoRotateSpeed = 20
-    // 视角最小距离
-    controls.zoomSpeed = 5
-    controls.addEventListener('change', render)// 监听鼠标、键盘事件
+    controls = new THREE.OrbitControls(camera, renderer.domElement);// 创建控件对象
+    controls.autoRotate = false;
+    controls.enableDamping = true;
+    controls.enableZoom = true;
+    // controls.maxZoom = 2;
+    // controls.minZoom = 0.3;
+    controls.maxDistance = 3000;
+    controls.minDistance = 700;
+    controls.addEventListener('change', render);// 监听鼠标、键盘事件
   }
 
   // 创建模型
   function createBoxGeometry (opt) {
-    let geometry = new THREE.BoxGeometry(...opt.size)
+    let geometry = new THREE.BoxGeometry(...opt.size);
     if (opt.translateZ) {
-      geometry.translate(0, 0, opt.translateZ)
+      geometry.translate(0, 0, opt.translateZ);
     }
-    let obj = new THREE.Mesh(geometry, opt.material)
-    obj.position.set(...opt.pos)
+    let obj = new THREE.Mesh(geometry, opt.material);
+    obj.position.set(...opt.pos);
     if (opt.angleX) {
-      obj.rotation.x = opt.angle
+      obj.rotation.x = opt.angle;
     } else {
-      obj.rotation.y = opt.angle
+      obj.rotation.y = opt.angle;
     }
-    obj.name = opt.name
-    return obj
+    obj.name = opt.name;
+    return obj;
   }
   // 创建基础物件
   function createrBaseItem () {
-    model.floor = createBoxGeometry({ size: [2000, 2000, 1], material: baseMat.floor, pos: [0, 0, 0], angle: -Math.PI / 2, name: '地面', angleX: true })
+    model.floor = createBoxGeometry({ size: [2000, 2000, 1], material: baseMat.floor, pos: [0, 0, 0], angle: -Math.PI / 2, name: '地面', angleX: true });
     model.walls = [
       createBoxGeometry({ size: [10, 300, 2000], material: baseMat.wall, pos: [1000, 150, 0], angle: Math.PI, name: '墙1' }),
       createBoxGeometry({ size: [10, 300, 2000], material: baseMat.wall, pos: [0, 150, 1000], angle: (Math.PI / 2), name: '有窗墙' }),
       createBoxGeometry({ size: [10, 300, 2010], material: baseMat.wall, pos: [0, 150, -1000], angle: (-Math.PI / 2), name: '墙3' }),
       createWall()
-    ]
+    ];
     model.doorWindow = [
       createBoxGeometry({ size: [1, 180, 90], material: baseMat.doorL, pos: [-1000, 90, -90], angle: 0, name: '门左', translateZ: 45 }),
       createBoxGeometry({ size: [1, 180, 90], material: baseMat.doorR, pos: [-1000, 90, 90], angle: 0, name: '门右', translateZ: -45 }),
       createBoxGeometry({ size: [1, 100, 100], material: baseMat.window, pos: [-1000, 120, -500], angle: 0, name: '窗1' }),
       createBoxGeometry({ size: [1, 100, 100], material: baseMat.window, pos: [-1000, 120, 500], angle: 0, name: '窗2' })
-    ]
+    ];
   }
   // 创建有门的墙
   function createWall () {
-    let wall = createBoxGeometry({ size: [10, 300, 2010], material: baseMat.wall, pos: [-1000, 150, 0], angle: 0, name: '墙2' })
+    let wall = createBoxGeometry({ size: [10, 300, 2010], material: baseMat.wall, pos: [-1000, 150, 0], angle: 0, name: '墙2' });
     let holeArr = [
       createBoxGeometry({ size: [10, 180, 90], material: baseMat.wall, pos: [-1000, 90, -45], angle: 0, name: '门1' }),
       createBoxGeometry({ size: [10, 180, 90], material: baseMat.wall, pos: [-1000, 90, 45], angle: 0, name: '门2' }),
       createBoxGeometry({ size: [10, 100, 100], material: baseMat.wall, pos: [-1000, 120, -500], angle: 0, name: '窗1' }),
       createBoxGeometry({ size: [10, 100, 100], material: baseMat.wall, pos: [-1000, 120, 500], angle: 0, name: '窗2' })
-    ]
+    ];
   
-    let BSP = new ThreeBSP(wall)
+    let BSP = new ThreeBSP(wall);
     holeArr.forEach(h => {
-      let hole = new ThreeBSP(h)
-      BSP = BSP.subtract(hole)
+      let hole = new ThreeBSP(h);
+      BSP = BSP.subtract(hole);
     })
-    let newWall = BSP.toMesh(baseMat.wall)
-    newWall.material.flatshading = THREE.FlatShading
-    newWall.geometry.computeFaceNormals() // 重新计算几何体侧面法向量
-    newWall.geometry.computeVertexNormals()
-    newWall.material.needsUpdate = true // 更新纹理
-    newWall.geometry.buffersNeedUpdate = true
-    newWall.geometry.uvsNeedUpdate = true
-    return newWall
+    let newWall = BSP.toMesh(baseMat.wall);
+    newWall.material.flatshading = THREE.FlatShading;
+    newWall.geometry.computeFaceNormals(); // 重新计算几何体侧面法向量
+    newWall.geometry.computeVertexNormals();
+    newWall.material.needsUpdate = true; // 更新纹理
+    newWall.geometry.buffersNeedUpdate = true;
+    newWall.geometry.uvsNeedUpdate = true;
+    return newWall;
   }
   // 向场景中添加物件
   function addBaseItem () {
@@ -249,10 +267,10 @@
       let item = model[a]
       if (Array.isArray(item) || Object.prototype.toString.call(item) === '[object Array]') {
         item.forEach(e => {
-          scene.add(e)
+          scene.add(e);
         })
       } else {
-        scene.add(item)
+        scene.add(item);
       }
     }
   }

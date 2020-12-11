@@ -26,8 +26,8 @@ function createShelf (x) {
   scene.add(createShelfItem('line', [x, 2, 800], [10, 4, 400]))
   scene.add(createShelfItem('line', [x, 2, -800], [10, 4, 400]))
   for (let i = 1; i < 19; i++) {
-      let pos = [x-80, 10, i * 70 - 650];
-      createShelfItem('cabinet', pos, [100, 350, 160], 'cabinet');
+      let pos = [x,105, i * 70 - 650];
+      createShelfItem('cabinet', pos, [100, 1550, 160], 'cabinet');
   }
 }
 function createMtlObj (options) {
@@ -57,11 +57,11 @@ function createMtlObj (options) {
 function createShelfItem (type, pos, size, name) {
   if(type === "cabinet"){
     let opt = {
-      mtlBaseUrl: './model/JIGUI1/',
-      mtlPath: 'model/JIGUI1/',
-      mtlFileName: 'JIGUI1.mtl',
-      objPath: 'model/JIGUI1/',
-      objFileName: 'JIGUI1.obj',
+      mtlBaseUrl: './model/JIGUID/',
+      mtlPath: 'model/JIGUID/',
+      mtlFileName: 'JIGUID.mtl',
+      objPath: 'model/JIGUID/',
+      objFileName: 'JIGUID.obj',
       completeCallback: function (object) {
         object.scale.x = 0.1// 缩放级别
         object.scale.y = 0.1// 缩放级别
